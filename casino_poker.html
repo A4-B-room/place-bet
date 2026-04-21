@@ -44,7 +44,10 @@
         /* 戻るボタンを最前面へ */
         .home-link { position: absolute; top: -35px; left: 0; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85em; border: 1px solid rgba(255,255,255,0.4); padding: 4px 12px; border-radius: 5px; transition: 0.3s; z-index: 1001; }
         .home-link:hover { background: rgba(255,255,255,0.1); color: white; }
-   </style>
+
+        /* 赤いスート用の色設定 */
+        .text-red { color: #ff4444; }
+    </style>
 </head>
 <body>
 
@@ -195,6 +198,8 @@
         const area = document.getElementById(id);
         area.innerHTML = "";
         hand.forEach((c, i) => {
+            // スートが赤（♥か♦）ならクラスを適用
+            const isRed = (c.s === '♥' || c.s === '♦') ? 'text-red' : '';
             const content = isHidden ? "?" : c.s + c.v;
             const clickAttr = isPlayer && gameState === "HOLD" ? `onclick="toggleHold(${i})"` : "";
             const heldClass = isPlayer && heldIndices.has(i) ? "held" : "";
