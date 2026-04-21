@@ -194,22 +194,29 @@
         deck.sort(() => Math.random() - 0.5);
     }
 
-    function renderHand(id, hand, isPlayer, isHidden = false) {
+       function renderHand(id, hand, isPlayer, isHidden = false) {
         const area = document.getElementById(id);
         area.innerHTML = "";
         hand.forEach((c, i) => {
-            // スートが赤（♥か♦）ならクラスを適用
-            const isRed = (c.s === '♥' || c.s === '♦') ? 'text-red' : '';
+            // 伏せられている(isHidden)なら赤クラスを適用しない
+            const isRed = (!isHidden && (c.s === '♥' || c.s === '♦')) ? 'text-red' : '';
             const content = isHidden ? "?" : c.s + c.v;
+            
             const clickAttr = isPlayer && gameState === "HOLD" ? `onclick="toggleHold(${i})"` : "";
             const heldClass = isPlayer && heldIndices.has(i) ? "held" : "";
-             // card-item の class に ${isRed} を追加
+            
             area.innerHTML += `<div class="card-wrapper ${heldClass}" ${clickAttr}>
                 <div class="hold-label">HOLD</div>
                 <div class="card-item ${isRed}">${content}</div>
             </div>`;
         });
-        if(!isHidden) document.getElementById(id.replace("cards","rank")).innerText = getRank(hand).name;
+        // ランク表示も、伏せているときは隠す
+        const rankDisplay = document.getElementById(id.replace("cards","rank"));
+        if(isHidden) {
+            rankDisplay.innerText = id.includes("dealer") ? "Dealer: ?" : "Player: -";
+        } else {
+            rankDisplay.innerText = (id.includes("dealer") ? "Dealer: " : "Player: ") + getRank(hand).name;
+        }
     }
 
     function toggleHold(i) {
@@ -219,8 +226,9 @@
         renderHand("player-cards", pHand, true);
     }
 
-    async function processDraw() {
+       async function processDraw() {
         drawCount++;
+        // 1. プレイヤーのカード交換
         for(let i=0; i<5; i++) {
             if(!heldIndices.has(i)) pHand[i] = deck.pop();
         }
@@ -233,8 +241,23 @@
         } else {
             gameState = "DRAWING";
             document.getElementById("main-btn").disabled = true;
+            document.getElementById("announce-text").innerText = "Dealer's Turn...";
+
+            await new Promise(r => setTimeout(r, 800));
+
+            // 2. ディーラーの交換ロジック (ノーペアなら全部交換)
+            const dResult = getRank(dHand);
+            if (dResult.name === "ﾉｰﾍﾟｱ") {
+                document.getElementById("announce-text").innerText = "Dealer Changing Cards...";
+                // 全てのカードを新しいものに入れ替え
+                for(let i=0; i<5; i++) dHand[i] = deck.pop();
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
             document.getElementById("announce-text").innerText = "Open Cards...";
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 800));
+            
+            // ディーラーのカードを公開
             renderHand("dealer-cards", dHand, false, false);
             judge();
         }
