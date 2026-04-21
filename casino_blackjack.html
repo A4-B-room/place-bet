@@ -39,36 +39,9 @@
         #game-over { display: none; color: red; font-size: 2.5em; font-weight: bold; background: rgba(0,0,0,0.9); position: absolute; top:0; left:0; width:100%; height:100%; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; border-radius: 15px; }
    
    
-        /* 戻るボタンをコンテナ内の左上に配置 */
-        .home-link { 
-            position: absolute; 
-            top: -35px; /* コンテナの枠より上に配置 */
-            left: 0; 
-            color: rgba(255,255,255,0.7); 
-            text-decoration: none; 
-            font-size: 0.85em; 
-            border: 1px solid rgba(255,255,255,0.4); 
-            padding: 4px 12px; 
-            border-radius: 5px; 
-            transition: 0.3s; 
-            z-index: 1001; 
-        }
-        .home-link:hover { 
-            background: rgba(255,255,255,0.1); 
-            color: white; 
-        }
-
-        /* コンテナの余白設定をポーカーに合わせる */
-        #game-container { 
-            width: 440px; 
-            background: #113d25; 
-            border: 2px solid #d4af37; 
-            border-radius: 15px; 
-            padding: 20px; 
-            text-align: center; 
-            position: relative; 
-            margin-top: 40px; /* 上にボタンを置くための隙間を確保 */
-        }
+       /* 戻るボタンを最前面へ */
+        .home-link { position: absolute; top: -35px; left: 0; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85em; border: 1px solid rgba(255,255,255,0.4); padding: 4px 12px; border-radius: 5px; transition: 0.3s; z-index: 1001; }
+        .home-link:hover { background: rgba(255,255,255,0.1); color: white; }
 
     
         /* 赤いスート用の色設定 */
