@@ -111,6 +111,7 @@
 </div>
 
 <script>
+    // --- 1. 定数・変数の宣言 ---
     let balance = 100000;
     let currentBet = 0;
     let gameState = "BET"; 
@@ -119,7 +120,9 @@
     let historyData = [];
 
     const SUIT_POWER = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
+    const VALUES_MAP = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
+    // --- 2. 初期化処理 ---
     window.onload = () => {
         const saved = localStorage.getItem("casino_shared_balance");
         if (saved !== null) balance = parseInt(saved);
@@ -132,16 +135,9 @@
         document.getElementById("balance").innerText = balance.toLocaleString();
         document.getElementById("current-bet").innerText = currentBet.toLocaleString();
         localStorage.setItem("casino_shared_balance", balance);
-        if (balance <= 0 && currentBet === 0) document.getElementById("game-over").style.display = "flex";
-    }
-
-    function restartGame() {
-        balance = 100000; updateUI(); location.reload();
-    }
-
-    function toggleSettings() {
-        const m = document.getElementById("settings-modal");
-        m.style.display = (m.style.display === "block") ? "none" : "block";
+        if (balance <= 0 && currentBet === 0) {
+            document.getElementById("game-over").style.display = "flex";
+        }
     }
 
     function initEmptyCards(id) {
@@ -152,10 +148,12 @@
         }
     }
 
+    // --- 3. ベット・アクション管理 ---
     function changeBet(v) {
         if(gameState !== "BET") return;
-        if(currentBet + v < 0 || currentBet + v > balance) return;
-        currentBet += v;
+        if(currentBet + v < 0) currentBet = 0;
+        else if(currentBet + v > balance) currentBet = balance;
+        else currentBet += v;
         updateUI();
     }
 
@@ -170,10 +168,26 @@
         else if(gameState === "HOLD") processDraw();
     }
 
+    // --- 4. ゲームロジック ---
+    function createDeck() {
+        const suits = ['♠','♥','♦','♣'];
+        deck = [];
+        for(let s of suits) {
+            for(let i=0; i<VALUES_MAP.length; i++) {
+                deck.push({s: s, v: VALUES_MAP[i], n: i + 2});
+            }
+        }
+        deck.sort(() => Math.random() - 0.5);
+    }
+
     async function startGame() {
         if(currentBet <= 0) return alert("賭け金を設定してください");
-        gameState = "HOLD"; drawCount = 0;
-        balance -= currentBet; updateUI();
+        gameState = "HOLD"; 
+        drawCount = 0; 
+        heldIndices.clear();
+        balance -= currentBet; 
+        updateUI();
+        
         document.querySelectorAll('#bet-btns-container button').forEach(b => b.disabled = true);
         
         createDeck();
@@ -187,35 +201,25 @@
         document.getElementById("announce-text").innerText = "残すカードを選択 (1/2回目)";
     }
 
-    function createDeck() {
-        const suits = ['♠','♥','♦','♣'], values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-        deck = [];
-        for(let s of suits) for(let v of values) deck.push({s, v, n: values.indexOf(v)+2});
-        deck.sort(() => Math.random() - 0.5);
-    }
-
-       function renderHand(id, hand, isPlayer, isHidden = false) {
+    function renderHand(id, hand, isPlayer, isHidden = false) {
         const area = document.getElementById(id);
         area.innerHTML = "";
         hand.forEach((c, i) => {
-            // 伏せられている(isHidden)なら赤クラスを適用しない
             const isRed = (!isHidden && (c.s === '♥' || c.s === '♦')) ? 'text-red' : '';
             const content = isHidden ? "?" : c.s + c.v;
-            
             const clickAttr = isPlayer && gameState === "HOLD" ? `onclick="toggleHold(${i})"` : "";
             const heldClass = isPlayer && heldIndices.has(i) ? "held" : "";
-            
             area.innerHTML += `<div class="card-wrapper ${heldClass}" ${clickAttr}>
                 <div class="hold-label">HOLD</div>
                 <div class="card-item ${isRed}">${content}</div>
             </div>`;
         });
-        // ランク表示も、伏せているときは隠す
-        const rankDisplay = document.getElementById(id.replace("cards","rank"));
+        
+        const labelId = id.replace("cards", "rank");
         if(isHidden) {
-            rankDisplay.innerText = id.includes("dealer") ? "Dealer: ?" : "Player: -";
+            document.getElementById(labelId).innerText = id.includes("dealer") ? "ディーラー: ?" : "プレイヤー: -";
         } else {
-            rankDisplay.innerText = (id.includes("dealer") ? "Dealer: " : "Player: ") + getRank(hand).name;
+            document.getElementById(labelId).innerText = (id.includes("dealer") ? "ディーラー: " : "プレイヤー: ") + getRank(hand).name;
         }
     }
 
@@ -226,9 +230,8 @@
         renderHand("player-cards", pHand, true);
     }
 
- async function processDraw() {
+    async function processDraw() {
         drawCount++;
-        // 1. プレイヤーのカード交換
         for(let i=0; i<5; i++) {
             if(!heldIndices.has(i)) pHand[i] = deck.pop();
         }
@@ -242,149 +245,106 @@
             gameState = "DRAWING";
             document.getElementById("main-btn").disabled = true;
 
-            // --- ディーラーのターン開始 ---
-            for (let dCycle = 1; dCycle <= 2; dCycle++) {
-                document.getElementById("announce-text").innerText = `Dealer's Turn (${dCycle}/2)...`;
+            // ディーラーAI (2段階交換)
+            for (let d = 1; d <= 2; d++) {
+                document.getElementById("announce-text").innerText = `Dealer's Turn (${d}/2)...`;
                 await new Promise(r => setTimeout(r, 800));
-
-                let dRes = getRank(dHand);
-                // ノーペアなら確実に1～5枚交換、ペア以上ならランダムで交換するか決める
-                if (dRes.name === "ﾉｰﾍﾟｱ" || Math.random() > 0.6) {
+                if (getRank(dHand).name === "ハイカード") {
                     document.getElementById("announce-text").innerText = "Dealer Changing Cards...";
-                    
-                    // 1枚〜5枚のランダムな枚数を決める
-                    let changeCount = Math.floor(Math.random() * 5) + 1;
-                    // 配列をシャッフルして入れ替えるインデックスをランダムに選ぶ
-                    let indices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
-                    
-                    for (let i = 0; i < changeCount; i++) {
-                        dHand[indices[i]] = deck.pop();
-                    }
-                    
-                    // 伏せたまま再描画（カードが動いた演出）
+                    let count = Math.floor(Math.random() * 5) + 1;
+                    let idx = [0,1,2,3,4].sort(() => Math.random() - 0.5);
+                    for(let i=0; i<count; i++) dHand[idx[i]] = deck.pop();
                     renderHand("dealer-cards", dHand, false, true);
                     await new Promise(r => setTimeout(r, 1000));
-                } else {
-                    document.getElementById("announce-text").innerText = "Dealer Stay";
-                    await new Promise(r => setTimeout(r, 600));
-                    if (dCycle === 1) continue; // 1回目でステイしても2回目へ
                 }
             }
 
             document.getElementById("announce-text").innerText = "Open Cards...";
             await new Promise(r => setTimeout(r, 800));
-            
-            // ディーラーのカードを公開
             renderHand("dealer-cards", dHand, false, false);
             judge();
         }
     }
-    
+
+    // --- 5. 判定ロジック ---
     function getRank(h) {
-        // 数字の大きい順にソート (A=14)
-        const sortedHand = [...h].sort((a, b) => b.n - a.n);
-        const nums = sortedHand.map(c => c.n);
-        const suits = sortedHand.map(c => c.s);
-        
-        // カードの出現枚数をカウント
-        const counts = {}; 
-        h.forEach(c => counts[c.n] = (counts[c.n] || 0) + 1);
-        
-        // 出現枚数が多い順 ＞ 数字が大きい順 にソート
-        const sortedKeys = Object.keys(counts).sort((a, b) => {
-            const countDiff = counts[b] - counts[a];
-            if (countDiff !== 0) return countDiff;
-            return b - a;
-        });
-
+        const sorted = [...h].sort((a, b) => b.n - a.n);
+        const nums = sorted.map(c => c.n);
+        const counts = {}; h.forEach(c => counts[c.v] = (counts[c.v] || 0) + 1);
         const cVals = Object.values(counts).sort((a, b) => b - a);
-        const isFlush = new Set(suits).size === 1;
 
-        // --- ストレート判定 (A2345対応) ---
-        let isStraight = false;
-        const uniqueNums = [...new Set(nums)].sort((a, b) => a - b);
-        let isLowStraight = false;
+        const isFlush = new Set(h.map(c => c.s)).size === 1;
+        const u = [...new Set(nums)].sort((a, b) => a - b);
+        let isStr = (u.length === 5 && (u[4] - u[0] === 4));
+        const isLowStr = (u[0] === 2 && u[1] === 3 && u[2] === 4 && u[3] === 5 && u[4] === 14);
+        if(!isStr && u.length === 5) isStr = isLowStr;
 
-        if (uniqueNums.length === 5) {
-            const isNormalStraight = (Math.max(...uniqueNums) - Math.min(...uniqueNums) === 4);
-            isLowStraight = (uniqueNums[0] === 2 && uniqueNums[1] === 3 && uniqueNums[2] === 4 && uniqueNums[3] === 5 && uniqueNums[4] === 14);
-            isStraight = isNormalStraight || isLowStraight;
-        }
+        let base = 0, name = "ハイカード";
+        if (isFlush && isStr && nums[0] === 14 && !isLowStr) { name = "ロイヤルフラッシュ"; base = 900; }
+        else if (isFlush && isStr) { name = "ストレートフラッシュ"; base = 800; }
+        else if (cVals[0] === 4) { name = "フォーカード"; base = 700; }
+        else if (cVals[0] === 3 && cVals[1] === 2) { name = "フルハウス"; base = 600; }
+        else if (isFlush) { name = "フラッシュ"; base = 500; }
+        else if (isStr) { name = "ストレート"; base = 400; }
+        else if (cVals[0] === 3) { name = "スリーカード"; base = 300; }
+        else if (cVals[0] === 2 && cVals[1] === 2) { name = "ツーペア"; base = 200; }
+        else if (cVals[0] === 2) { name = "ワンペア"; base = 100; }
 
-        // --- 役名とベーススコアの決定 ---
-        let baseScore = 0, name = "ハイカード";
+        const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || VALUES_MAP.indexOf(b) - VALUES_MAP.indexOf(a));
+        let strength = VALUES_MAP.indexOf(sortedKeys[0]) + 2;
+        if (isStr && isLowStr) strength = 5; // ホイールは5ハイ扱い
 
-        if (isFlush && isStraight && nums[0] === 14 && !isLowStraight) { name = "ロイヤルフラッシュ"; baseScore = 900; }
-        else if (isFlush && isStraight) { name = "ストレートフラッシュ"; baseScore = 800; }
-        else if (cVals[0] === 4) { name = "フォーカード"; baseScore = 700; }
-        else if (cVals[0] === 3 && cVals[1] === 2) { name = "フルハウス"; baseScore = 600; }
-        else if (isFlush) { name = "フラッシュ"; baseScore = 500; }
-        else if (isStraight) { name = "ストレート"; baseScore = 400; }
-        else if (cVals[0] === 3) { name = "スリーカード"; baseScore = 300; }
-        else if (cVals[0] === 2 && cVals[1] === 2) { name = "ツーペア"; baseScore = 200; }
-        else if (cVals[0] === 2) { name = "ワンペア"; baseScore = 100; }
-
-        // --- スコア計算 (同役の場合の強さ) ---
-        // 役に関わる一番強いカードの数字
-        let primaryStrength = parseInt(sortedKeys[0]);
-        // ホイール(A2345)の場合、ストレートとしての強さは「5」
-        if (name === "ストレート" && isLowStraight) primaryStrength = 5;
-        if (name === "ストレートフラッシュ" && isLowStraight) primaryStrength = 5;
-
-        // キッカー（役に関係ない手札）の強さを微小値として加算
-        const kickerPower = nums[0] / 100;
-
-        return { 
-            name: name, 
-            score: baseScore + primaryStrength + kickerPower 
-        };
+        return { name, score: base + strength + (nums[0] / 100) };
     }
-
-
 
     function judge() {
         gameState = "RESULT";
-        const pResult = getRank(pHand);
-        const dResult = getRank(dHand);
+        const p = getRank(pHand), d = getRank(dHand);
+        let win = (p.score > d.score) ? 1 : (p.score < d.score ? -1 : 0);
         
-        let win = 0;
-        if (pResult.score > dResult.score) win = 1;
-        else if (pResult.score < dResult.score) win = -1;
-
         let mult = 1;
-        if (win === 1) {
-            const base = Math.floor(pResult.score / 100) * 100;
-            // 設定画面から各役の倍率を取得
-            const inputId = "m-" + (base === 0 ? "100" : base); 
-            const configMult = document.getElementById(inputId);
-            mult = configMult ? parseFloat(configMult.value) : 1;
+        if(win === 1) {
+            const id = "m-" + (Math.floor(p.score / 100) * 100 || 100);
+            mult = parseFloat(document.getElementById(id)?.value || 1);
+            balance += (currentBet + Math.floor(currentBet * mult));
+        } else if(win === 0) {
+            balance += currentBet;
         }
 
-        let change = win === 1 ? (currentBet + currentBet * mult) : (win === 0 ? currentBet : 0);
-        balance += change;
-        const resMsg = win === 1 ? "YOU WIN!" : win === -1 ? "YOU LOSE" : "PUSH";
-        document.getElementById("announce-text").innerText = resMsg;
-        document.getElementById("announce-text").style.color = win === 1 ? "gold" : (win === -1 ? "red" : "white");
-
-        historyData.unshift({ win, text: `${resMsg} (${pResult.name}) / ${currentBet.toLocaleString()} (x${mult})` });
+        const msg = win === 1 ? "YOU WIN!" : (win === -1 ? "YOU LOSE" : "PUSH");
+        document.getElementById("announce-text").innerText = msg;
+        document.getElementById("announce-text").style.color = win === 1 ? "gold" : (win === -1 ? "#ff4444" : "white");
+        
+        historyData.unshift({ win, text: `${msg} (${p.name}) / ${currentBet.toLocaleString()}` });
         renderHistory();
 
         setTimeout(() => {
-            gameState = "BET"; currentBet = 0; drawCount = 0;
+            gameState = "BET"; currentBet = 0;
             document.getElementById("main-btn").disabled = false;
             document.getElementById("main-btn").innerText = "DEAL (勝負開始)";
-            document.getElementById("announce-text").innerText = "Place your bet";
-            document.getElementById("announce-text").style.color = "gold";
+            document.getElementById("announce-text").innerText = "Ready...";
             document.querySelectorAll('#bet-btns-container button').forEach(b => b.disabled = false);
             updateUI();
-        }, 3500);
+            initEmptyCards("player-cards");
+            initEmptyCards("dealer-cards");
+        }, 3000);
     }
 
     function renderHistory() {
         document.getElementById("history-log").innerHTML = historyData.map(h => 
-            `<div class="${h.win===1?'res-win':(h.win===-1?'res-lose':'')}">${h.text}</div>`
-        ).join("");
+            `<div class="${h.win===1?'res-win':(h.win===-1?'res-lose':'')}">${h.text}</div>`).join("");
+    }
+
+    function toggleSettings() {
+        const s = document.getElementById("settings-modal");
+        s.style.display = s.style.display === "block" ? "none" : "block";
+    }
+
+    function restartGame() {
+        localStorage.setItem("casino_shared_balance", "100000");
+        location.reload();
     }
 </script>
+
 </body>
 </html>
