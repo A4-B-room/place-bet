@@ -40,24 +40,35 @@
    
    
         /* 戻るボタンをコンテナ内の左上に配置 */
-    .home-link {
-    position: absolute;
-    top: 10px;    /* コンテナの枠から10px下に */
-    left: 10px;   /* コンテナの枠から10px右に */
-    color: rgba(255,255,255,0.8);
-    text-decoration: none;
-    font-size: 0.8em;
-    border: 1px solid rgba(255,255,255,0.4);
-    padding: 6px 12px;
-    border-radius: 5px;
-    transition: 0.3s;
-    z-index: 1001;
-    background: rgba(0,0,0,0.2); /* 少し背景を暗くして読みやすく */
-}
-.home-link:hover {
-    background: rgba(255,255,255,0.2);
-    color: white;
-}
+        .home-link { 
+            position: absolute; 
+            top: -35px; /* コンテナの枠より上に配置 */
+            left: 0; 
+            color: rgba(255,255,255,0.7); 
+            text-decoration: none; 
+            font-size: 0.85em; 
+            border: 1px solid rgba(255,255,255,0.4); 
+            padding: 4px 12px; 
+            border-radius: 5px; 
+            transition: 0.3s; 
+            z-index: 1001; 
+        }
+        .home-link:hover { 
+            background: rgba(255,255,255,0.1); 
+            color: white; 
+        }
+
+        /* コンテナの余白設定をポーカーに合わせる */
+        #game-container { 
+            width: 440px; 
+            background: #113d25; 
+            border: 2px solid #d4af37; 
+            border-radius: 15px; 
+            padding: 20px; 
+            text-align: center; 
+            position: relative; 
+            margin-top: 40px; /* 上にボタンを置くための隙間を確保 */
+        }
 
     
         /* 赤いスート用の色設定 */
