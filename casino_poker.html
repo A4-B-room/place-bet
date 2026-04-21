@@ -245,14 +245,20 @@
 
             await new Promise(r => setTimeout(r, 800));
 
-            // 2. ディーラーの交換ロジック (ノーペアなら全部交換)
+                      // 2. ディーラーの交換ロジック
             const dResult = getRank(dHand);
             if (dResult.name === "ﾉｰﾍﾟｱ") {
                 document.getElementById("announce-text").innerText = "Dealer Changing Cards...";
-                // 全てのカードを新しいものに入れ替え
+                
+                // 内部データを入れ替え
                 for(let i=0; i<5; i++) dHand[i] = deck.pop();
+                
+                // ★追加：ここで再描画することで「?」のカードが新しくなった演出になります
+                renderHand("dealer-cards", dHand, false, true); 
+                
                 await new Promise(r => setTimeout(r, 1000));
             }
+
 
             document.getElementById("announce-text").innerText = "Open Cards...";
             await new Promise(r => setTimeout(r, 800));
