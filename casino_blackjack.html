@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>カジノ・ブラックジャック・EX</title>
+    <style>
+        body { background: #072b16; color: white; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 10px; }
+        #game-container { width: 440px; background: #113d25; border: 2px solid #d4af37; border-radius: 15px; padding: 20px; text-align: center; position: relative; }
+        
+        .status { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .val { color: gold; font-weight: bold; font-size: 1.3em; }
+
+        /* ベットボタン */
+        .bet-area { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 10px 5px; font-weight: bold; transition: 0.2s; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .btn-plus { background: #ff4444; color: white; }
+        .btn-minus { background: #4444ff; color: white; }
+        .btn-allin { grid-column: span 4; background: gold; margin-top: 5px; }
+
+        /* カード・スコア */
+        .card-display { font-size: 26px; font-weight: bold; margin: 10px 0; min-height: 50px; display: flex; justify-content: center; gap: 8px; }
+        .card-item { background: white; color: black; padding: 8px 12px; border-radius: 6px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
+        .score-label { color: gold; font-size: 1em; margin-bottom: 15px; background: rgba(0,0,0,0.2); display: inline-block; padding: 2px 10px; border-radius: 10px; }
+
+        /* 操作ボタン */
+        .action-btns { display: flex; gap: 8px; margin: 10px 0; }
+        .main-action { flex: 1; padding: 15px; font-size: 1em; border-radius: 8px; }
+        #hit-btn { background: #ffcc00; }
+        #stand-btn { background: #ffffff; color: black; }
+        #double-btn { background: #ff8800; color: white; }
+
+        /* 演出テキスト */
+        #announce-text { font-size: 1.5em; height: 40px; color: gold; font-weight: bold; text-shadow: 2px 2px 4px black; margin: 10px 0; }
+        .history-container { background: #000; border-radius: 5px; padding: 10px; height: 90px; overflow-y: auto; text-align: left; font-size: 0.8em; margin-top: 10px; border: 1px solid #333; }
+        .res-win { color: gold; } .res-lose { color: #ff6666; }
+
+        /* ゲームオーバー画面（チンチロと統一） */
+        #game-over { display: none; color: red; font-size: 2.5em; font-weight: bold; background: rgba(0,0,0,0.9); position: absolute; top:0; left:0; width:100%; height:100%; justify-content: center; align-items: center; flex-direction: column; z-index: 2000; border-radius: 15px; }
+    </style>
+</head>
+<body>
+
+<!-- ホームに戻るボタン -->
+<a href="index.html" style="position: absolute; top: 15px; left: 15px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.8em; border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 5px;">
+    🏠 ロビーへ戻る
+</a>
+
+<div id="game-container">
+    <div class="status">
+        <div>💰 所持金: <span id="balance" class="val">100,000</span></div>
+        <div>📢 現在の賭け金: <span id="current-bet" class="val">0</span></div>
+    </div>
+
+    <div class="bet-area" id="bet-btns-container">
+        <button class="btn-plus" onclick="changeBet(100)">+100</button>
+        <button class="btn-plus" onclick="changeBet(1000)">+1k</button>
+        <button class="btn-plus" onclick="changeBet(10000)">+10k</button>
+        <button class="btn-plus" onclick="changeBet(100000)">+100k</button>
+        <button class="btn-minus" onclick="changeBet(-100)">-100</button>
+        <button class="btn-minus" onclick="changeBet(-1000)">-1k</button>
+        <button class="btn-minus" onclick="changeBet(-10000)">-10k</button>
+        <button class="btn-minus" onclick="changeBet(-100000)">-100k</button>
+        <button class="btn-allin" id="allin-btn" onclick="allIn()">オールイン / クリア</button>
+    </div>
+
+    <div id="dealer-area">
+        <div id="dealer-cards" class="card-display"></div>
+        <div id="dealer-score" class="score-label">Dealer: -</div>
+    </div>
+
+    <div id="announce-text">Ready...</div>
+
+    <div class="action-btns">
+        <button id="hit-btn" class="main-action" onclick="hit()" disabled>Hit</button>
+        <button id="double-btn" class="main-action" onclick="doubleDown()" disabled>Double</button>
+        <button id="stand-btn" class="main-action" onclick="stand()" disabled>Stand</button>
+    </div>
+    <button id="start-btn" class="main-action" style="width:100%; background:gold; margin-bottom: 10px;" onclick="startGame()">DEAL (勝負開始)</button>
+
+    <div id="player-area">
+        <div id="player-score" class="score-label">Player: -</div>
+        <div id="player-cards" class="card-display"></div>
+    </div>
+
+    <div class="history-container" id="history-log"></div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="game-over">
+        <div>GAME OVER</div>
+        <button onclick="restartGame()" style="background:white; padding:10px 20px; font-size: 0.4em; margin-top:20px; border-radius:5px; border:none; cursor:pointer; font-weight:bold;">リスタート</button>
+    </div>
+</div>
+
+<script>
+    let balance = 100000;
+    let currentBet = 0;
+    let originalBet = 0;
+    let deck = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let historyData = [];
+
+    window.onload = () => {
+        const saved = localStorage.getItem("casino_shared_balance");
+        if (saved !== null) balance = parseInt(saved);
+        updateUI();
+    };
+
+    function updateUI() {
+        document.getElementById("balance").innerText = balance.toLocaleString();
+        document.getElementById("current-bet").innerText = currentBet.toLocaleString();
+        localStorage.setItem("casino_shared_balance", balance);
+        // 資金ゼロ判定
+        if (balance <= 0 && currentBet === 0) {
+            document.getElementById("game-over").style.display = "flex";
+        }
+    }
+
+    function restartGame() {
+        balance = 100000;
+        localStorage.setItem("casino_shared_balance", balance);
+        document.getElementById("game-over").style.display = "none";
+        location.reload();
+    }
+
+    function setBetButtonsDisabled(disabled) {
+        const btns = document.querySelectorAll('#bet-btns-container button');
+        btns.forEach(b => b.disabled = disabled);
+    }
+
+    function changeBet(v) {
+        if(currentBet + v < 0 || currentBet + v > balance) return;
+        currentBet += v;
+        updateUI();
+    }
+
+    function allIn() {
+        currentBet = (currentBet === balance) ? 0 : balance;
+        updateUI();
+    }
+
+    function createDeck() {
+        const suits = ['♠','♥','♦','♣'];
+        const values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+        deck = [];
+        for(let s of suits) for(let v of values) deck.push({suit: s, value: v});
+        deck.sort(() => Math.random() - 0.5);
+    }
+
+    function getScore(hand) {
+        let score = 0, aceCount = 0;
+        for(let c of hand) {
+            if(c.value === 'A') aceCount++;
+            else if(['J','Q','K'].includes(c.value)) score += 10;
+            else score += parseInt(c.value);
+        }
+        for(let i=0; i<aceCount; i++) score += (score + 11 <= 21) ? 11 : 1;
+        return score;
+    }
+
+    function renderCards(id, hand, hideFirst = false) {
+        document.getElementById(id).innerHTML = hand.map((c, i) => 
+            (hideFirst && i === 0) ? `<div class="card-item" style="background:#444; color:#444">?</div>` 
+                                   : `<div class="card-item">${c.suit}${c.value}</div>`
+        ).join("");
+    }
+
+    async function startGame() {
+        if(currentBet <= 0) return alert("賭け金を設定してください");
+        
+        setBetButtonsDisabled(true);
+        document.getElementById("start-btn").disabled = true;
+
+        document.getElementById("player-cards").innerHTML = "";
+        document.getElementById("dealer-cards").innerHTML = "";
+        document.getElementById("player-score").innerText = "Player: -";
+        document.getElementById("dealer-score").innerText = "Dealer: -";
+        document.getElementById("announce-text").innerText = "Dealing...";
+        
+        originalBet = currentBet;
+        balance -= currentBet; 
+        updateUI();
+        
+        createDeck();
+        playerHand = [deck.pop(), deck.pop()];
+        dealerHand = [deck.pop(), deck.pop()];
+        
+        renderCards("player-cards", playerHand);
+        renderCards("dealer-cards", dealerHand, true);
+        document.getElementById("player-score").innerText = "Player: " + getScore(playerHand);
+
+        await new Promise(r => setTimeout(r, 1500)); 
+
+        const pScore = getScore(playerHand);
+        const dScore = getScore(dealerHand);
+        const isPlayerBJ = (pScore === 21);
+        const isDealerBJ = (dScore === 21);
+
+        if (isDealerBJ) {
+            renderCards("dealer-cards", dealerHand, false);
+            document.getElementById("dealer-score").innerText = "Dealer: " + dScore;
+            if (isPlayerBJ) {
+                document.getElementById("announce-text").innerText = "Both BlackJack! PUSH";
+                judge(0);
+            } else {
+                document.getElementById("announce-text").innerText = "Dealer BlackJack!";
+                judge(-1);
+            }
+        } 
+        else if (isPlayerBJ) {
+            renderCards("dealer-cards", dealerHand, false);
+            document.getElementById("dealer-score").innerText = "Dealer: " + dScore;
+            document.getElementById("announce-text").innerText = "Nice BlackJack!";
+            judge(1, true); 
+        } 
+        else {
+            document.getElementById("announce-text").innerText = "No BlackJack";
+            document.getElementById("hit-btn").disabled = false;
+            document.getElementById("stand-btn").disabled = false;
+            if(balance >= originalBet) document.getElementById("double-btn").disabled = false;
+        }
+    }
+
+    function hit() {
+        document.getElementById("double-btn").disabled = true;
+        playerHand.push(deck.pop());
+        renderCards("player-cards", playerHand);
+        const score = getScore(playerHand);
+        document.getElementById("player-score").innerText = "Player: " + score;
+        if(score > 21) {
+            document.getElementById("announce-text").innerText = "💥 BUST!!";
+            judge(-1);
+        }
+    }
+
+    function doubleDown() {
+        if(balance < originalBet) return;
+        balance -= originalBet;
+        currentBet += originalBet;
+        updateUI();
+        playerHand.push(deck.pop());
+        renderCards("player-cards", playerHand);
+        document.getElementById("player-score").innerText = "Player: " + getScore(playerHand);
+        
+        const score = getScore(playerHand);
+        if (score > 21) {
+            document.getElementById("announce-text").innerText = "💥 BUST!!";
+            judge(-1);
+        } else {
+            stand();
+        }
+    }
+
+    async function stand() {
+        document.getElementById("hit-btn").disabled = true;
+        document.getElementById("stand-btn").disabled = true;
+        document.getElementById("double-btn").disabled = true;
+        
+        renderCards("dealer-cards", dealerHand, false);
+        let dScore = getScore(dealerHand);
+        document.getElementById("dealer-score").innerText = "Dealer: " + dScore;
+        
+        while(dScore < 17) {
+            document.getElementById("announce-text").innerText = "Dealer drawing...";
+            await new Promise(r => setTimeout(r, 1000));
+            dealerHand.push(deck.pop());
+            renderCards("dealer-cards", dealerHand);
+            dScore = getScore(dealerHand);
+            document.getElementById("dealer-score").innerText = "Dealer: " + dScore;
+        }
+        
+        const pScore = getScore(playerHand);
+        if(dScore > 21 || pScore > dScore) judge(1);
+        else if(pScore < dScore) judge(-1);
+        else judge(0);
+    }
+
+    function judge(win, isBJ = false) {
+        document.getElementById("hit-btn").disabled = true;
+        document.getElementById("stand-btn").disabled = true;
+        document.getElementById("double-btn").disabled = true;
+        
+        let mult = isBJ ? 1.5 : 1;
+        let returnAmount = 0;
+        if (win === 1) returnAmount = currentBet + (currentBet * mult);
+        else if (win === 0) returnAmount = currentBet;
+
+        balance += returnAmount;
+        const resultLabel = win === 1 ? (isBJ ? "BJ WIN" : "WIN") : (win === -1 ? "LOSE" : "PUSH");
+        
+        historyData.unshift({win, text: `${resultLabel} / ${currentBet.toLocaleString()}`});
+        if(historyData.length > 20) historyData.pop();
+        renderHistory();
+
+        setTimeout(() => {
+            currentBet = 0;
+            updateUI(); // ここでゲームオーバー判定が走ります
+            setBetButtonsDisabled(false); 
+            document.getElementById("start-btn").disabled = false;
+            if(balance > 0) document.getElementById("announce-text").innerText = "Place your bet";
+        }, 3000);
+    }
+
+    function renderHistory() {
+        document.getElementById("history-log").innerHTML = historyData.map(h => 
+            `<div class="${h.win===1?'res-win':(h.win===-1?'res-lose':'')}">${h.text}</div>`
+        ).join("");
+    }
+</script>
+</body>
+</html>
