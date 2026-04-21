@@ -46,7 +46,7 @@
         .home-link:hover { background: rgba(255,255,255,0.1); color: white; }
 
         /* 赤いスート用の色設定 */
-        .text-red { color: #ff4444; }
+        .text-red  { color: #ff4444 !important; }
     </style>
 </head>
 <body>
@@ -250,17 +250,17 @@
         const isFlush = new Set(suits).size === 1;
         const isStraight = new Set(nums).size === 5 && (Math.max(...nums) - Math.min(...nums) === 4);
 
-        let baseScore = 0, name = "ﾉｰﾍﾟｱ";
+        let baseScore = 0, name = "ノーペア";
 
-        if (isFlush && isStraight && nums[0] === 14) { name = "ﾛｲﾔﾙﾌﾗｯｼｭ"; baseScore = 900; }
-        else if (isFlush && isStraight) { name = "ｽﾄﾚｰﾄﾌﾗｯｼｭ"; baseScore = 800; }
-        else if (cVals[0] === 4) { name = "ﾌｫｰｶｰﾄﾞ"; baseScore = 700; }
-        else if (cVals[0] === 3 && cVals[1] === 2) { name = "ﾌﾙﾊｳｽ"; baseScore = 600; }
-        else if (isFlush) { name = "ﾌﾗｯｼｭ"; baseScore = 500; }
-        else if (isStraight) { name = "ｽﾄﾚｰﾄ"; baseScore = 400; }
-        else if (cVals[0] === 3) { name = "ｽﾘｰｶｰﾄﾞ"; baseScore = 300; }
-        else if (cVals[0] === 2 && cVals[1] === 2) { name = "ﾂｰﾍﾟｱ"; baseScore = 200; }
-        else if (cVals[0] === 2) { name = "ﾜﾝﾍﾟｱ"; baseScore = 100; }
+        if (isFlush && isStraight && nums[0] === 14) { name = "ロイヤルフラッシュ"; baseScore = 900; }
+        else if (isFlush && isStraight) { name = "ストレートフラッシュ"; baseScore = 800; }
+        else if (cVals[0] === 4) { name = "フォーカード"; baseScore = 700; }
+        else if (cVals[0] === 3 && cVals[1] === 2) { name = "フルハウス"; baseScore = 600; }
+        else if (isFlush) { name = "フラッシュ"; baseScore = 500; }
+        else if (isStraight) { name = "ストレート"; baseScore = 400; }
+        else if (cVals[0] === 3) { name = "スリーカード"; baseScore = 300; }
+        else if (cVals[0] === 2 && cVals[1] === 2) { name = "ツーペア"; baseScore = 200; }
+        else if (cVals[0] === 2) { name = "ワンペア"; baseScore = 100; }
 
         const kickerPower = sortedHand[0].n + (SUIT_POWER[sortedHand[0].s] / 10);
         return { name: name, score: baseScore + kickerPower };
