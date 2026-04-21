@@ -203,9 +203,10 @@
             const content = isHidden ? "?" : c.s + c.v;
             const clickAttr = isPlayer && gameState === "HOLD" ? `onclick="toggleHold(${i})"` : "";
             const heldClass = isPlayer && heldIndices.has(i) ? "held" : "";
+             // card-item の class に ${isRed} を追加
             area.innerHTML += `<div class="card-wrapper ${heldClass}" ${clickAttr}>
                 <div class="hold-label">HOLD</div>
-                <div class="card-item">${content}</div>
+                <div class="card-item ${isRed}">${content}</div>
             </div>`;
         });
         if(!isHidden) document.getElementById(id.replace("cards","rank")).innerText = getRank(hand).name;
