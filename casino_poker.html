@@ -281,17 +281,30 @@
     }
 
 
-    function getRank(h) {
-        const sortedHand = [...h].sort((a, b) => b.n - a.n || SUIT_POWER[b.s] - SUIT_POWER[a.s]);
+        function getRank(h) {
+        // 数字の大きい順にソート
+        const sortedHand = [...h].sort((a, b) => b.n - a.n);
         const nums = sortedHand.map(c => c.n);
         const suits = sortedHand.map(c => c.s);
-        const counts = {}; h.forEach(c => counts[c.v] = (counts[c.v] || 0) + 1);
-        const cVals = Object.values(counts).sort((a, b) => b - a);
+        
+        // カードの出現枚数をカウント
+        const counts = {}; 
+        h.forEach(c => counts[c.v] = (counts[c.v] || 0) + 1);
+        
+        // 出現枚数が多い順 ＞ 数字が大きい順 にソート（ペアの強さを判定するため）
+        const sortedValues = Object.keys(counts).sort((a, b) => {
+            const countDiff = counts[b] - counts[a];
+            if (countDiff !== 0) return countDiff;
+            // 数字の強さ比較 (values配列内での位置)
+            const vArr = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+            return vArr.indexOf(b) - vArr.indexOf(a);
+        });
 
+        const cVals = Object.values(counts).sort((a, b) => b - a);
         const isFlush = new Set(suits).size === 1;
         const isStraight = new Set(nums).size === 5 && (Math.max(...nums) - Math.min(...nums) === 4);
 
-        let baseScore = 0, name = "ノーペア";
+        let baseScore = 0, name = "ハイカード";
 
         if (isFlush && isStraight && nums[0] === 14) { name = "ロイヤルフラッシュ"; baseScore = 900; }
         else if (isFlush && isStraight) { name = "ストレートフラッシュ"; baseScore = 800; }
@@ -303,9 +316,19 @@
         else if (cVals[0] === 2 && cVals[1] === 2) { name = "ツーペア"; baseScore = 200; }
         else if (cVals[0] === 2) { name = "ワンペア"; baseScore = 100; }
 
-        const kickerPower = sortedHand[0].n + (SUIT_POWER[sortedHand[0].s] / 10);
-        return { name: name, score: baseScore + kickerPower };
+        // ペア自体の強さ（一番枚数が多いグループの数字）を反映
+        const vArr = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+        const primaryPairStrength = vArr.indexOf(sortedValues[0]) + 2;
+        
+        // キッカー（役に関係ない手札）の強さを微小値として加算
+        const kickerPower = nums[0] / 100;
+
+        return { 
+            name: name, 
+            score: baseScore + primaryPairStrength + kickerPower 
+        };
     }
+
 
     function judge() {
         gameState = "RESULT";
