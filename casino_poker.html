@@ -226,7 +226,7 @@
         renderHand("player-cards", pHand, true);
     }
 
-       async function processDraw() {
+          async function processDraw() {
         drawCount++;
         // 1. プレイヤーのカード交換
         for(let i=0; i<5; i++) {
@@ -241,24 +241,35 @@
         } else {
             gameState = "DRAWING";
             document.getElementById("main-btn").disabled = true;
-            document.getElementById("announce-text").innerText = "Dealer's Turn...";
 
-            await new Promise(r => setTimeout(r, 800));
+            // --- ディーラーのターン開始 ---
+            for (let dCycle = 1; dCycle <= 2; dCycle++) {
+                document.getElementById("announce-text").innerText = `Dealer's Turn (${dCycle}/2)...`;
+                await new Promise(r => setTimeout(r, 800));
 
-                      // 2. ディーラーの交換ロジック
-            const dResult = getRank(dHand);
-            if (dResult.name === "ﾉｰﾍﾟｱ") {
-                document.getElementById("announce-text").innerText = "Dealer Changing Cards...";
-                
-                // 内部データを入れ替え
-                for(let i=0; i<5; i++) dHand[i] = deck.pop();
-                
-                // ★追加：ここで再描画することで「?」のカードが新しくなった演出になります
-                renderHand("dealer-cards", dHand, false, true); 
-                
-                await new Promise(r => setTimeout(r, 1000));
+                let dRes = getRank(dHand);
+                // ノーペアなら確実に1～5枚交換、ペア以上ならランダムで交換するか決める
+                if (dRes.name === "ﾉｰﾍﾟｱ" || Math.random() > 0.6) {
+                    document.getElementById("announce-text").innerText = "Dealer Changing Cards...";
+                    
+                    // 1枚〜5枚のランダムな枚数を決める
+                    let changeCount = Math.floor(Math.random() * 5) + 1;
+                    // 配列をシャッフルして入れ替えるインデックスをランダムに選ぶ
+                    let indices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
+                    
+                    for (let i = 0; i < changeCount; i++) {
+                        dHand[indices[i]] = deck.pop();
+                    }
+                    
+                    // 伏せたまま再描画（カードが動いた演出）
+                    renderHand("dealer-cards", dHand, false, true);
+                    await new Promise(r => setTimeout(r, 1000));
+                } else {
+                    document.getElementById("announce-text").innerText = "Dealer Stay";
+                    await new Promise(r => setTimeout(r, 600));
+                    if (dCycle === 1) continue; // 1回目でステイしても2回目へ
+                }
             }
-
 
             document.getElementById("announce-text").innerText = "Open Cards...";
             await new Promise(r => setTimeout(r, 800));
@@ -268,6 +279,7 @@
             judge();
         }
     }
+
 
     function getRank(h) {
         const sortedHand = [...h].sort((a, b) => b.n - a.n || SUIT_POWER[b.s] - SUIT_POWER[a.s]);
