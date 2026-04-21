@@ -162,12 +162,22 @@
         return score;
     }
 
-    function renderCards(id, hand, hideFirst = false) {
-        document.getElementById(id).innerHTML = hand.map((c, i) => 
-            (hideFirst && i === 0) ? `<div class="card-item" style="background:#444; color:#444">?</div>` 
-                                   : `<div class="card-item">${c.suit}${c.value}</div>`
-        ).join("");
+       function renderCards(id, hand, hideFirst = false) {
+        const area = document.getElementById(id);
+        area.innerHTML = hand.map((c, i) => {
+            // 1. 伏せカード(hideFirstかつ1枚目)の判定
+            if (hideFirst && i === 0) {
+                return `<div class="card-item" style="background:#2c3e50; color:#2c3e50">?</div>`;
+            }
+
+            // 2. スートが赤（♥か♦）ならクラスを適用
+            const isRed = (c.suit === '♥' || c.suit === '♦') ? 'style="color: #ff4444;"' : '';
+            
+            // 3. HTMLを生成
+            return `<div class="card-item" ${isRed}>${c.suit}${c.value}</div>`;
+        }).join("");
     }
+
 
     async function startGame() {
         if(currentBet <= 0) return alert("賭け金を設定してください");
