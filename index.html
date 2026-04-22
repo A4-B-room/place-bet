@@ -2,11 +2,24 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Room 000 </title>
      <link rel="icon" type="image/png" sizes="128x128" href="image_coin.png">
     <style>
         body { background: #051a0d; color: white; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px; }
-        #lobby-container { width: 440px; background: #113322; border: 3px solid gold; border-radius: 20px; padding: 30px 20px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #lobby-container { 
+    width: 95%;           /* スマホでは画面幅いっぱいに広がる */
+    max-width: 440px;     /* パソコンでは440px以上にならないように制限 */
+    background: #113322; 
+    border: 2px solid gold; 
+    border-radius: 15px; 
+    padding: 20px; 
+    text-align: center; 
+    position: relative; 
+    margin: 40px auto 10px; /* margin-topだけでなく、左右中央寄せ(auto)を追加 */
+    box-sizing: border-box; /* パディングを含めたサイズ計算にする */
+}
+
         
         h1 { color: gold; text-shadow: 2px 2px 4px black; font-size: 2.2em; margin-bottom: 10px; }
         .subtitle { font-size: 0.9em; opacity: 0.8; margin-bottom: 30px; }
@@ -91,6 +104,17 @@
     // 画面に戻ってくるたびに最新の所持金を表示
     window.onload = updateLobbyUI;
     window.onfocus = updateLobbyUI;
+
+    /* スマホでのボタン操作時に画面がズームを防ぐ設定 */
+button, .card-wrapper {
+    touch-action: manipulation; /* 連打してもズームしない */
+}
+
+/* 文字サイズがスマホで自動で変わるのを防ぐ */
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 </script>
 
 </body>
