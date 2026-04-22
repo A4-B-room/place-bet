@@ -2,12 +2,24 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>カジノ・ポーカー </title>
     <style>
      /* チンチロと統一した色設定 */
         body { background: #051a0d; color: white; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 10px; }
-        #game-container { width: 440px; background: #113322; border: 2px solid gold; border-radius: 15px; padding: 20px; text-align: center; position: relative; margin-top: 40px; }
-        
+        #game-container { 
+    width: 95%;           /* スマホでは画面幅いっぱいに広がる */
+    max-width: 440px;     /* パソコンでは440px以上にならないように制限 */
+    background: #113322; 
+    border: 2px solid gold; 
+    border-radius: 15px; 
+    padding: 20px; 
+    text-align: center; 
+    position: relative; 
+    margin: 40px auto 10px; /* margin-topだけでなく、左右中央寄せ(auto)を追加 */
+    box-sizing: border-box; /* パディングを含めたサイズ計算にする */
+}
+
         .status { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .val { color: gold; font-weight: bold; font-size: 1.3em; }
 
@@ -47,6 +59,19 @@
 
         /* 赤いスート用の色設定 */
         .text-red  { color: #ff4444 !important; }
+
+        /* スマホでのボタン操作時に画面がズームしたり、
+   青い選択枠が出たりするのを防ぐ設定 */
+    button, .card-wrapper {
+        touch-action: manipulation; /* 連打してもズームしない */
+        -webkit-tap-highlight-color: transparent; /* タップ時の青い枠を消す */
+    }
+
+    /* 文字サイズがスマホで自動で変わるのを防ぐ */
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
+
     </style>
 </head>
 <body>
@@ -322,7 +347,9 @@
             gameState = "BET"; currentBet = 0;
             document.getElementById("main-btn").disabled = false;
             document.getElementById("main-btn").innerText = "DEAL (勝負開始)";
+            const announce = document.getElementById("announce-text");
             document.getElementById("announce-text").innerText = "Ready...";
+            announce.style.color = "white";
             document.querySelectorAll('#bet-btns-container button').forEach(b => b.disabled = false);
             updateUI();
             initEmptyCards("player-cards");
