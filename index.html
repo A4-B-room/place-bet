@@ -28,16 +28,16 @@
         .balance-display span { color: gold; font-size: 1.8em; font-weight: bold; }
 
         .menu-grid { display: grid; gap: 15px; }
-        .menu-item { background: #1a472a; border: 2px solid white; border-radius: 12px; padding: 20px; text-decoration: none; color: white; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
+        .menu-item { background: #1a472a; border: 2px solid white; border-radius: 12px; padding: 20px; text-decoration: none; color: white; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; text-align: left; }
         .menu-item:hover { background: gold; color: black; border-color: gold; transform: scale(1.02); }
-        .menu-item b { font-size: 1.2em; }
+        .menu-item b { font-size: 1.2em; display: block; margin-bottom: 2px; }
         .menu-item span { font-size: 0.8em; opacity: 0.7; }
         .menu-item:hover span { opacity: 1; }
 
         .footer-btns { margin-top: 40px; }
         .reset-btn { background: none; border: 1px solid #ff4444; color: #ff4444; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
 
-        /* スマホ用ズーム防止と文字調整 */
+        /* スマホ用設定 */
         button, .menu-item { touch-action: manipulation; }
         html { -webkit-text-size-adjust: 100%; }
         * { -webkit-tap-highlight-color: transparent; }
@@ -45,31 +45,40 @@
 </head>
 <body>
 
-<div class="menu-grid">
-    <a href="casino_chinchiro.html" class="menu-item">
-        <div>
-            <b>🎲Room 003</b><br>
-            <span>伝統のサイコロ勝負 (チンチロ)</span>
-        </div>
-        <div>▶</div>
-    </a>
+<div id="lobby-container">
+    <h1>CASINO LOBBY</h1>
+    <div class="subtitle">至高のギャンブル体験へようこそ</div>
 
-    <a href="casino_blackjack.html" class="menu-item">
-        <div>
-            <b>🎰Room 021</b><br>
-            <span>21を狙う駆け引き (BJ)</span>
-        </div>
-        <div>▶</div>
-    </a>
+    <div class="balance-display">
+        所持金<br>
+        <span id="shared-balance">100,000</span> コイン
+    </div>
 
-    <a href="casino_poker.html" class="menu-item">
-        <div>
-            <b>🃏Room 052</b><br>
-            <span>最強の役を揃えろ (ポーカー)</span>
-        </div>
-        <div>▶</div>
-    </a>
-</div>
+    <div class="menu-grid">
+        <a href="casino_chinchiro.html" class="menu-item">
+            <div>
+                <b>🎲Room 003</b>
+                <span>伝統のサイコロ勝負 (チンチロ)</span>
+            </div>
+            <div>▶</div>
+        </a>
+
+        <a href="casino_blackjack.html" class="menu-item">
+            <div>
+                <b>🎰Room 021</b>
+                <span>21を狙う駆け引き (BJ)</span>
+            </div>
+            <div>▶</div>
+        </a>
+
+        <a href="casino_poker.html" class="menu-item">
+            <div>
+                <b>🃏Room 052</b>
+                <span>最強の役を揃えろ (ポーカー)</span>
+            </div>
+            <div>▶</div>
+        </a>
+    </div>
 
     <div class="footer-btns">
         <button class="reset-btn" onclick="resetAll()">全データをリセット</button>
@@ -80,7 +89,8 @@
     function updateLobbyUI() {
         const saved = localStorage.getItem("casino_shared_balance");
         const balance = saved !== null ? parseInt(saved) : 100000;
-        document.getElementById("shared-balance").innerText = balance.toLocaleString();
+        const elem = document.getElementById("shared-balance");
+        if(elem) elem.innerText = balance.toLocaleString();
         
         if (saved === null) {
             localStorage.setItem("casino_shared_balance", "100000");
@@ -94,15 +104,8 @@
         }
     }
 
-    // ページ読み込み時に実行
     window.onload = updateLobbyUI;
-
-    // ゲームから「戻る」で戻ってきた時にも確実に実行させる（スマホ対策）
-    window.onpageshow = (event) => {
-        updateLobbyUI();
-    };
-
-    // 画面にフォーカスが合った時にも更新
+    window.onpageshow = updateLobbyUI;
     window.onfocus = updateLobbyUI;
 </script>
 
