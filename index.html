@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Room 000 </title>
-     <link rel="icon" type="image/png" sizes="128x128" href="image_coin.png">
+    <title>Room 000</title>
+    <link rel="icon" type="image/png" sizes="128x128" href="image_coin.png">
     <style>
         body { background: #051a0d; color: white; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; margin: 0; padding: 20px; }
+        
         #lobby-container { 
-    width: 95%;           /* スマホでは画面幅いっぱいに広がる */
-    max-width: 440px;     /* パソコンでは440px以上にならないように制限 */
-    background: #113322; 
-    border: 2px solid gold; 
-    border-radius: 15px; 
-    padding: 20px; 
-    text-align: center; 
-    position: relative; 
-    margin: 40px auto 10px; /* margin-topだけでなく、左右中央寄せ(auto)を追加 */
-    box-sizing: border-box; /* パディングを含めたサイズ計算にする */
-}
-
+            width: 95%;
+            max-width: 440px;
+            background: #113322; 
+            border: 2px solid gold; 
+            border-radius: 15px; 
+            padding: 20px; 
+            text-align: center; 
+            position: relative; 
+            margin: 40px auto 10px;
+            box-sizing: border-box;
+        }
         
         h1 { color: gold; text-shadow: 2px 2px 4px black; font-size: 2.2em; margin-bottom: 10px; }
         .subtitle { font-size: 0.9em; opacity: 0.8; margin-bottom: 30px; }
@@ -36,6 +36,11 @@
 
         .footer-btns { margin-top: 40px; }
         .reset-btn { background: none; border: 1px solid #ff4444; color: #ff4444; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+
+        /* スマホ用ズーム防止と文字調整 */
+        button, .menu-item { touch-action: manipulation; }
+        html { -webkit-text-size-adjust: 100%; }
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body>
@@ -52,29 +57,27 @@
     <div class="menu-grid">
         <a href="casino_chinchiro.html" class="menu-item">
             <div>
-                <b>🎲 チンチロ</b><br>
-                <span>伝統のサイコロ勝負</span>
+                <b>🎲 Room 003</b><br>
+                <span>伝統のサイコロ勝負 (チンチロ)</span>
             </div>
             <div>▶</div>
         </a>
 
         <a href="casino_blackjack.html" class="menu-item">
             <div>
-                <b>🎰 ブラックジャック</b><br>
-                <span>21を狙う駆け引き</span>
+                <b>🎰 Room 021</b><br>
+                <span>21を狙う駆け引き (BJ)</span>
             </div>
             <div>▶</div>
         </a>
 
         <a href="casino_poker.html" class="menu-item">
             <div>
-                <b>🃏 ポーカー</b><br>
-                <span>最強の役を揃えろ</span>
+                <b>🃏 Room 052</b><br>
+                <span>最強の役を揃えろ (ポーカー)</span>
             </div>
             <div>▶</div>
         </a>
-
-        <!-- ハイ＆ローを後で作るならここに追加 -->
     </div>
 
     <div class="footer-btns">
@@ -88,7 +91,6 @@
         const balance = saved !== null ? parseInt(saved) : 100000;
         document.getElementById("shared-balance").innerText = balance.toLocaleString();
         
-        // 初回訪問時にデータをセットしておく
         if (saved === null) {
             localStorage.setItem("casino_shared_balance", "100000");
         }
@@ -101,20 +103,16 @@
         }
     }
 
-    // 画面に戻ってくるたびに最新の所持金を表示
+    // ページ読み込み時に実行
     window.onload = updateLobbyUI;
+
+    // ゲームから「戻る」で戻ってきた時にも確実に実行させる（スマホ対策）
+    window.onpageshow = (event) => {
+        updateLobbyUI();
+    };
+
+    // 画面にフォーカスが合った時にも更新
     window.onfocus = updateLobbyUI;
-
-    /* スマホでのボタン操作時に画面がズームを防ぐ設定 */
-button, .card-wrapper {
-    touch-action: manipulation; /* 連打してもズームしない */
-}
-
-/* 文字サイズがスマホで自動で変わるのを防ぐ */
-html {
-    -webkit-text-size-adjust: 100%;
-}
-
 </script>
 
 </body>
