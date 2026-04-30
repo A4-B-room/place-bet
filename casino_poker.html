@@ -184,14 +184,21 @@
         updateUI();
     }
 
-    function halfIn() {
+        function halfIn() {
         if(gameState !== "BET") return;
-        // 所持金の半分（100単位で切り捨て）をセット
-        let halfValue = Math.floor((balance / 2) / 100) * 100;
-        // すでにハーフ額なら0に戻す（トグル動作）
-        currentBet = (currentBet === halfValue) ? 0 : halfValue;
+        
+        // 現在の所持金の半分、または現在の賭け金の半分を計算
+        // （賭け金が0なら所持金の半分、何か賭けていればその半分にする）
+        let targetValue = (currentBet === 0) ? balance : currentBet;
+        let nextHalf = Math.floor((targetValue / 2) / 100) * 100;
+        
+        // 10万円未満にならないように調整（最低単位100円）
+        if (nextHalf < 100000 && balance >= 100000) nextHalf = 0; 
+        
+        currentBet = nextHalf;
         updateUI();
     }
+
     
     function allIn() {
         if(gameState !== "BET") return;
